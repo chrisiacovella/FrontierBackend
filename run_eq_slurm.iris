@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#SBATCH -J eq_CO_O_s1
+#SBATCH -p gpu
+#SBATCH -t 0-2:00:00
+#SBATCH --nodes=2
+#SBATCH --gpus-per-node=4
+#SBATCH --cpus-per-task=1
+#SBATCH --tasks-per-node=4
+#SBATCH --mem=16gb
+#SBATCH --output slurm-%x.%A.out
+
+. ~/.bashrc
+
+# Use the right conda environment
+micromamba activate ash-sage-refit
+
+GPUS_PER_NODE=4      # must match --gpus-per-node above
+TOTAL_WORKERS=8      # in theory independent of the number of nodes, but we want to
+                     # make sure we don't oversubscribe the GPUs, so should be GPUS_PER_NODE * number of nodes
+
+# make sure we don't oversubscribe the GPUs
+if (( TOTAL_WORKERS > SLURM_JOB_NUM_NODES * GPUS_PER_NODE )); then
+    echo "ERROR: TOTAL_WORKERS ($TOTAL_WORKERS) exceeds available GPU slots" \
+         "($SLURM_JOB_NUM_NODES nodes x $GPUS_PER_NODE GPUs/node)." >&2
+    exit 1
+fi
+
+
+# rank 0 = scheduler, rank 1 = client/driver so we add 2 to the total number of workers
+TOTAL_RANKS=$(( TOTAL_WORKERS + 2 ))
+
+
+# echo the environment variables for debugging
+echo "SLURM_JOB_NUM_NODES: $SLURM_JOB_NUM_NODES"
+echo "SLURM_NODELIST: $SLURM_NODELIST"
+echo "SLURM_NTASKS: $SLURM_NTASKS"
+echo "SLURM_NTASKS_PER_NODE: $SLURM_NTASKS_PER_NODE"
+echo "TOTAL_WORKERS: $TOTAL_WORKERS"
+echo "TOTAL_RANKS: $TOTAL_RANKS"
+
+export DASK_DISTRIBUTED__COMM__INTERFACE="ib0"
+
+srun --overlap --ntasks="$TOTAL_RANKS" --ntasks-per-node="$(( (TOTAL_RANKS + SLURM_JOB_NUM_NODES - 1) / SLURM_JOB_NUM_NODES ))" \
+    python equilibrate-slurm-preallocate.py \
+        --n-workers "$TOTAL_WORKERS" \
+        --port                      8217                             \
+        --dataset                   "./training-set.json"			\
+        --force-field                "./force-field.offxml"			\
