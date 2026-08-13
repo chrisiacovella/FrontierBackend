@@ -29,7 +29,7 @@ logging.basicConfig(
 
 
 @click.command()
-@click.option("--dataset", "-d", "--dataset_path", default="training_set.json")
+@click.option("--dataset_path","--dataset", "-d", default="training_set.json")
 @click.option("--force-field", "-f", default="openff-2.2.1.offxml")
 @click.option("--port", "-p", default=8000)
 @click.option(
