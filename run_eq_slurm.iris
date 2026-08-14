@@ -11,23 +11,18 @@
 
 . ~/.bashrc
 
+PORT = 8217
 # Use the right conda environment
 micromamba activate ash-sage-refit
 
-GPUS_PER_NODE=4      # must match --gpus-per-node above
-TOTAL_WORKERS=8      # in theory independent of the number of nodes, but we want to
-                     # make sure we don't oversubscribe the GPUs, so should be GPUS_PER_NODE * number of nodes
+# Note, task-per-node and gpus-per-node should match as we want each task to have a GPU.
 
-# make sure we don't oversubscribe the GPUs
-if (( TOTAL_WORKERS > SLURM_JOB_NUM_NODES * GPUS_PER_NODE )); then
-    echo "ERROR: TOTAL_WORKERS ($TOTAL_WORKERS) exceeds available GPU slots" \
-         "($SLURM_JOB_NUM_NODES nodes x $GPUS_PER_NODE GPUs/node)." >&2
-    exit 1
-fi
+# Get the total resources we have been allocated for this script, which will be passed to srun
+TOTAL_RESOURCES=$(( SLURM_JOB_NUM_NODES * SLURM_NTASKS_PER_NODE))
 
-
-# rank 0 = scheduler, rank 1 = client/driver so we add 2 to the total number of workers
-TOTAL_RANKS=$(( TOTAL_WORKERS + 2 ))
+# The TOTAL_WORKERS will be 2 less the total resources, as we need 2 workers for dask server and scheduler.
+# When we call the python script we pass the TOTAL_WORKERS, used to set the number of workers for the dask client.
+TOTAL_WORKERS=$(( TOTAL_TASKS - 2 ))
 
 
 # echo the environment variables for debugging
@@ -36,13 +31,19 @@ echo "SLURM_NODELIST: $SLURM_NODELIST"
 echo "SLURM_NTASKS: $SLURM_NTASKS"
 echo "SLURM_NTASKS_PER_NODE: $SLURM_NTASKS_PER_NODE"
 echo "TOTAL_WORKERS: $TOTAL_WORKERS"
-echo "TOTAL_RANKS: $TOTAL_RANKS"
+echo "TOTAL_RESOURCES: TOTAL_RESOURCES"
 
 export DASK_DISTRIBUTED__COMM__INTERFACE="ib0"
 
-srun --overlap --ntasks="$TOTAL_RANKS" --ntasks-per-node="$(( (TOTAL_RANKS + SLURM_JOB_NUM_NODES - 1) / SLURM_JOB_NUM_NODES ))" \
+start=$(date +%s)
+
+srun --overlap --ntasks="$TOTAL_RESOURCES" --ntasks-per-node="$SLURM_NTASKS_PER_NODE"\
     python equilibrate-slurm-preallocate.py \
         --n-workers "$TOTAL_WORKERS" \
-        --port                      8217                             \
-        --dataset                   "./training-set.json"			\
-        --force-field                "./force-field.offxml"			\
+        --port                      "$PORT"                             \
+        --dataset                   "./training-set.json"                       \
+        --force-field               "./force-field.offxml"                     \
+
+end=$(date +%s)
+echo "Elapsed Time: $(($end-$start)) seconds"
+
