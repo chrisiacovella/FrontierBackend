@@ -11,7 +11,7 @@
 
 . ~/.bashrc
 
-PORT = 8217
+PORT=8217
 # Use the right conda environment
 micromamba activate ash-sage-refit
 
@@ -22,7 +22,7 @@ TOTAL_RESOURCES=$(( SLURM_JOB_NUM_NODES * SLURM_NTASKS_PER_NODE))
 
 # The TOTAL_WORKERS will be 2 less the total resources, as we need 2 workers for dask server and scheduler.
 # When we call the python script we pass the TOTAL_WORKERS, used to set the number of workers for the dask client.
-TOTAL_WORKERS=$(( TOTAL_TASKS - 2 ))
+TOTAL_WORKERS=$(( TOTAL_RESOURCES - 2 ))
 
 
 # echo the environment variables for debugging
@@ -31,7 +31,7 @@ echo "SLURM_NODELIST: $SLURM_NODELIST"
 echo "SLURM_NTASKS: $SLURM_NTASKS"
 echo "SLURM_NTASKS_PER_NODE: $SLURM_NTASKS_PER_NODE"
 echo "TOTAL_WORKERS: $TOTAL_WORKERS"
-echo "TOTAL_RESOURCES: TOTAL_RESOURCES"
+echo "TOTAL_RESOURCES: $TOTAL_RESOURCES"
 
 export DASK_DISTRIBUTED__COMM__INTERFACE="ib0"
 
