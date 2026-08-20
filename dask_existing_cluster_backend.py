@@ -65,6 +65,17 @@ class DaskExistingClusterBackend(BaseDaskBackend):
         kwargs.pop("gpu_assignments", None)
         kwargs.pop("per_worker_logging", None)
 
+        from distributed import get_worker
+
+        # add in some logging:
+        per_worker_logging = kwargs.pop("per_worker_logging", False)
+        if per_worker_logging:
+            import os
+            os.makedirs("worker-logs", exist_ok=True)
+            kwargs["logger_path"] = os.path.join(
+                "worker-logs", f"{get_worker().id}.log"
+            )
+
         if available_resources.number_of_gpus > 0:
             # Inside the worker process the GPU always appears as device 0.
             available_resources._gpu_device_indices = "0"
@@ -81,6 +92,8 @@ class DaskExistingClusterBackend(BaseDaskBackend):
             for protocol_class in registered_workflow_protocols.values()
         ]
 
+
+
         # `resources={"GPU": 1}` tells the dask scheduler this task may
         # only run on a worker that has registered GPU capacity
         # Any task beyond the number of available resources just get queued up.
@@ -95,6 +108,7 @@ class DaskExistingClusterBackend(BaseDaskBackend):
             **kwargs,
             available_resources=self._resources_per_worker,
             registered_workflow_protocols=protocols_to_import,
+            per_worker_logging=True,
             key=key,
             **submit_kwargs,
         )
