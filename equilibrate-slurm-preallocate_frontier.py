@@ -1,14 +1,27 @@
+'''
+this was tested on Frontier, which uses AMD GPUs and SLURM.
+
+A few things are different than when running on an NVIDIA GPU cluster, specifically related to
+the method for multiprocessing.
+
+'''
+
 import os
 import pickle
 import logging
-
+import multiprocessing
 import click
 
-# Every rank needs a distinct GPU before any CUDA-touching library
-# loads, so this has to happen before other imports that might import
-# torch/openmm/etc. SLURM_LOCALID is the task's local rank on its
-# node, which is exactly the GPU index we want (0..GPUS_PER_NODE-1).
-os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("SLURM_LOCALID", "0")
+# We use openmmtools to figure out the platforms we can run on; this will cause a `hipErrorNoDevice` error when
+# we actually try to go run a process (since the HIP runtime has already been touched by the parent).
+# To fix this, we can change the starting method to `spawn`  that will create a fresh process instead of a
+# copy of the  parent that has already been touched.
+
+try:
+    multiprocessing.set_start_method("spawn")
+except RuntimeError:
+    # already set -- e.g. if this module gets re-imported by a spawned child, do nothing
+    pass
 
 from dask_jobqueue.slurm import SLURMRunner
 from dask.distributed import Client
