@@ -1,0 +1,60 @@
+#!/bin/bash
+#SBATCH -J fit_test
+#SBATCH -t 2-00:00:00
+#SBATCH --nodes=1                     # <-- physical allocation: N nodes
+#SBATCH -A PROJECT_ID <-- replace with your project ID
+
+#SBATCH --output slurm-%x.%A.out
+#SBATCH -q batch
+
+set -euo pipefail
+
+module load miniforge3
+module load rocm/6.2.4  # for openmm8.5 and 8.6, I found that rocm 7.x.x doesn't work,
+			# even though rocm-core=7.x.x
+			# without loading this, it won't find the hip platform.
+
+conda activate ash-sage-refit-frontier1
+
+PORT=8217
+
+GPUS_PER_NODE=8       # 8 GCDs/node on Frontier
+TOTAL_RESOURCES=$(( SLURM_JOB_NUM_NODES * GPUS_PER_NODE ))
+
+# rank 0 = scheduler, rank 1 = client/driver, remaining ranks = GPU workers
+TOTAL_WORKERS=$(( TOTAL_RESOURCES - 2 ))
+
+# echo the environment variables for debugging
+echo "SLURM_JOB_NUM_NODES: $SLURM_JOB_NUM_NODES"
+echo "SLURM_NODELIST: $SLURM_NODELIST"
+echo "TOTAL_WORKERS: $TOTAL_WORKERS"
+echo "TOTAL_RESOURCES: $TOTAL_RESOURCES"
+
+# Forces every dask scheduler/worker/client process to bind and
+# advertise on this network interface, avoiding workers hanging on
+# "Waiting to connect to: tcp://..." on clusters with more than one
+# network. Find the right name with `ip -o -4 addr show` on a compute
+# node if this needs to change.
+
+export DASK_DISTRIBUTED__COMM__INTERFACE="ib0"
+
+mkdir -p rank-logs
+# %t = task id (0-indexed, relative to this srun step). rank 0 =
+# scheduler, rank 1 = client/driver, ranks 2+ = workers 0..N-1. So e.g.
+# worker 0's raw screen output ends up in rank-logs/rank-2.out.
+#
+start=$(date +%s)
+
+srun --overlap --ntasks="$TOTAL_RESOURCES" --ntasks-per-node="$GPUS_PER_NODE" \
+    --output=rank-logs/rank-%t.out --error=rank-logs/rank-%t.err \
+    python fit-slurm-preallocate_frontier.py \
+        --input                     optimize.in \
+        --log                       force_balance.log \
+        --port                      "$PORT" \
+        --n-workers                 "$TOTAL_WORKERS" \
+        --n-threads                 1 \
+        --n-gpus                    1 \
+        --gpu-toolkit               HIP
+
+end=$(date +%s)
+echo "Elapsed Time: $(($end-$start)) seconds"

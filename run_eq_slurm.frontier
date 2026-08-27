@@ -1,0 +1,50 @@
+#!/bin/bash
+#SBATCH -J benchmark_1
+#SBATCH -t 0-2:00:00
+#SBATCH --nodes=1
+#SBATCH -A PROJECT_ID <-- replace with your project ID
+#SBATCH --output slurm-%x.%A.out
+# Use the right conda environment
+
+
+module load miniforge3
+module load rocm/6.2.4 # for some reason loading rocm/7x does not show up the HIP platform
+                        # despite the fact that rocm-core = 7.0.2 is what is in the conda environment for openmm 8.5
+conda activate ash-sage-refit-frontier1
+
+
+PORT=8217
+
+rocm-smi
+
+# Note, task-per-node and gpus-per-node should match as we want each task to have a GPU.
+
+# Get the total resources we have been allocated for this script, which will be passed to srun
+TOTAL_RESOURCES=$(( SLURM_JOB_NUM_NODES * 8))
+
+# The TOTAL_WORKERS will be 2 less the total resources, as we need 2 workers for dask server and scheduler.
+# When we call the python script we pass the TOTAL_WORKERS, used to set the number of workers for the dask client.
+TOTAL_WORKERS=$(( TOTAL_RESOURCES - 2 ))
+
+
+# echo the environment variables for debugging
+echo "SLURM_JOB_NUM_NODES: $SLURM_JOB_NUM_NODES"
+echo "SLURM_NODELIST: $SLURM_NODELIST"
+echo "SLURM_NTASKS: $SLURM_NTASKS"
+echo "SLURM_NTASKS_PER_NODE: $SLURM_NTASKS_PER_NODE"
+echo "TOTAL_WORKERS: $TOTAL_WORKERS"
+echo "TOTAL_RESOURCES: $TOTAL_RESOURCES"
+
+export DASK_DISTRIBUTED__COMM__INTERFACE="ib0"
+
+start=$(date +%s)
+
+srun --overlap --ntasks="$TOTAL_RESOURCES" --ntasks-per-node=8\
+    python equilibrate-slurm-preallocate_frontier.py \
+        --n-workers "$TOTAL_WORKERS" \
+        --port                      "$PORT"                             \
+        --dataset                   "./training-set.json"                       \
+        --force-field               "./force-field.offxml"                     \
+
+end=$(date +%s)
+echo "Elapsed Time: $(($end-$start)) seconds"
