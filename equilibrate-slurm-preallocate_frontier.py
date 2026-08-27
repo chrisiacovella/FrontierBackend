@@ -35,10 +35,7 @@ from openff.evaluator.forcefield import SmirnoffForceFieldSource
 
 from dask_existing_cluster_backend import DaskExistingClusterBackend
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+
 
 
 @click.command()
@@ -71,6 +68,11 @@ def main(dataset_path, force_field, port, n_workers):
 
 
 def run_calculation(client, dataset_path, force_field, port):
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
     dataset = PhysicalPropertyDataSet.from_json(dataset_path)
     logger.info(f"Loaded {len(dataset.properties)} properties from {dataset_path}")
 
