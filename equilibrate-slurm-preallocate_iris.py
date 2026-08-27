@@ -83,6 +83,7 @@ def run_calculation(client, dataset_path, force_field, port):
         calculation_backend=backend,
         working_directory="working-directory",
         delete_working_files=False,
+        enable_data_caching=True,
         storage_backend=LocalFileStorage(cache_objects_in_memory=True),
         port=port,
     )
