@@ -3,9 +3,7 @@
 #SBATCH -t 2-00:00:00
 #SBATCH --nodes=1                     # <-- physical allocation: N nodes
 #SBATCH -A PROJECT_ID <-- replace with your project ID
-
 #SBATCH --output slurm-%x.%A.out
-#SBATCH -q batch
 
 set -euo pipefail
 
