@@ -63,12 +63,11 @@ class DaskExistingClusterBackend(BaseDaskBackend):
     def _wrapped_function(function, *args, **kwargs):
         available_resources = kwargs["available_resources"]
         kwargs.pop("gpu_assignments", None)
-        kwargs.pop("per_worker_logging", None)
 
         from distributed import get_worker
 
         # add in some logging:
-        per_worker_logging = kwargs.pop("per_worker_logging", False)
+        per_worker_logging = True # kwargs.pop("per_worker_logging", False)
         logger.info(f"per_worker_logging={per_worker_logging}")
 
         if per_worker_logging:
