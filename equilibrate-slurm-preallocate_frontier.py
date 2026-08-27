@@ -80,7 +80,7 @@ def run_calculation(client, dataset_path, force_field, port):
     worker_resources = ComputeResources(
         number_of_threads=1,
         number_of_gpus=1,
-        preferred_gpu_toolkit=ComputeResources.GPUToolkit.CUDA,
+        preferred_gpu_toolkit=ComputeResources.GPUToolkit.HIP,
     )
 
     # Reuses the already-connected client from SLURMRunner rather than

@@ -69,12 +69,21 @@ class DaskExistingClusterBackend(BaseDaskBackend):
 
         # add in some logging:
         per_worker_logging = kwargs.pop("per_worker_logging", False)
+        logger.info(f"per_worker_logging={per_worker_logging}")
+
         if per_worker_logging:
+
             import os
+
+            # get current directory
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            logger.info(f"current_dir={current_dir}")
+
             os.makedirs("worker-logs", exist_ok=True)
             kwargs["logger_path"] = os.path.join(
                 "worker-logs", f"{get_worker().id}.log"
             )
+            logger.info(f"worker-logs={kwargs['logger_path']}")
 
         if available_resources.number_of_gpus > 0:
             # Inside the worker process the GPU always appears as device 0.
