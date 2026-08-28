@@ -306,6 +306,8 @@ def main(
     with SLURMRunner(
         scheduler_file="scheduler-{job_id}.json",
         worker_options={"nthreads": n_threads, "resources": {"GPU": n_gpus}},
+        "nanny": False,
+
     ) as runner:
         with Client(runner) as client:
             client.wait_for_workers(n_workers)
