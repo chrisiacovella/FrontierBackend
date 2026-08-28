@@ -309,7 +309,7 @@ def main(
     ) as runner:
         with Client(runner) as client:
             client.wait_for_workers(n_workers)
-            run_calculation(
+            run_fit(
                 client=client,
                 input_file=input_file,
                 log_file=log_file,
@@ -324,7 +324,7 @@ def main(
 
 
 
-def run_calculation(
+def run_fit(
     client,
     input_file,
     log_file,
