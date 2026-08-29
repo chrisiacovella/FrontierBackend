@@ -41,7 +41,7 @@ import shutil
 import typing
 import click
 from click_option_group import optgroup
-
+import multiprocessing
 try:
     multiprocessing.set_start_method("spawn")
 except RuntimeError:
