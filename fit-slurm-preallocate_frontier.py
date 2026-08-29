@@ -42,6 +42,13 @@ import typing
 import click
 from click_option_group import optgroup
 
+try:
+    multiprocessing.set_start_method("spawn")
+except RuntimeError:
+    # already set -- e.g. if this module gets re-imported by a spawned
+    # child reconstructing __main__; safe to ignore.
+    pass
+
 from dask_jobqueue.slurm import SLURMRunner
 from dask.distributed import Client
 
