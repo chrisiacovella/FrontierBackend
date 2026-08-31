@@ -33,7 +33,7 @@ from openff.evaluator.storage import LocalFileStorage
 from openff.evaluator.server.server import EvaluatorServer
 from openff.evaluator.forcefield import SmirnoffForceFieldSource
 
-from dask_existing_cluster_backend import DaskExistingClusterBackend
+from ../dask_existing_cluster_backend import DaskExistingClusterBackend
 
 
 

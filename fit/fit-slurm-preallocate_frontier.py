@@ -65,7 +65,7 @@ from openff.evaluator.utils.observables import ObservableType
 from openff.evaluator.properties import Density, EnthalpyOfMixing
 from forcebalance.evaluator_io import Evaluator_SMIRNOFF
 
-from dask_existing_cluster_backend import DaskExistingClusterBackend
+from ../dask_existing_cluster_backend import DaskExistingClusterBackend
 
 
 logger = logging.getLogger(__name__)
