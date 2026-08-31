@@ -6,7 +6,8 @@ rather than having dask submit jobs to the cluster on demand.
 
 This is done as the wall-time limits are a function of the number of nodes requested. 
 
-This also requires some changes to the scripts, that actually run the calculations; it is not a 100% drop-in replacement. 
+This also requires some changes to the scripts that actually run the calculations and the slurm submission scripts; 
+it is not just a one step drop-in replacement.
 
 A few changes that must be made to scripts:
 
