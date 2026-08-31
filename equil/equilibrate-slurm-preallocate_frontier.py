@@ -14,8 +14,8 @@ import click
 
 # We use openmmtools to figure out the platforms we can run on; this will cause a `hipErrorNoDevice` error when
 # we actually try to go run a process (since the HIP runtime has already been touched by the parent).
-# To fix this, we can change the starting method to `spawn`  that will create a fresh process instead of a
-# copy of the  parent that has already been touched.
+# To fix this, we can change the starting method to `spawn` that will create a fresh process instead of a
+# copy of the parent that has already been touched.
 
 try:
     multiprocessing.set_start_method("spawn")
@@ -49,15 +49,12 @@ from FrontierBackend.dask_existing_cluster_backend import DaskExistingClusterBac
     "slurm submission script -- used here only to size wait_for_workers().",
 )
 def main(dataset_path, force_field, port, n_workers):
-    # Rank 0 becomes the scheduler and blocks inside this context
-    # manager forever. Every other rank except SLURM_PROCID==1 becomes
-    # a worker and also blocks here forever. Only SLURM_PROCID==1 (the
-    # "client" rank) continues past this block -- so everything below
+    # Rank 0 becomes the scheduler and blocks inside this context manager.
+    # Every other rank except SLURM_PROCID==1 becomes
+    # a worker and also blocks here.
+    # Only SLURM_PROCID==1 (the "client" rank) continues past this block -- so everything below
     # only ever runs once, on exactly one rank.
     #
-    # Verify these kwarg names against your installed dask_jobqueue
-    # version (`pip show dask_jobqueue`); worker_options in particular
-    # may need adjusting (e.g. resources, nthreads) depending on version.
     with SLURMRunner(
         scheduler_file="scheduler-{job_id}.json",
         worker_options={"nthreads": 1, "resources": {"GPU": 1}},

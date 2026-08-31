@@ -1,5 +1,5 @@
 '''
-This was testing on the IRIS cluster which features NVIDIA GPUS and runs slurm.
+This was testing on the Frontier cluster which features AMD GPUS and runs SLURM.
 
 '''
 """
@@ -42,11 +42,17 @@ import typing
 import click
 from click_option_group import optgroup
 import multiprocessing
+
+
+# We use openmmtools to figure out the platforms we can run on; this will cause a `hipErrorNoDevice` error when
+# we actually try to go run a process (since the HIP runtime has already been touched by the parent).
+# To fix this, we can change the starting method to `spawn` that will create a fresh process instead of a
+# copy of the parent that has already been touched.
+
 try:
     multiprocessing.set_start_method("spawn")
 except RuntimeError:
-    # already set -- e.g. if this module gets re-imported by a spawned
-    # child reconstructing __main__; safe to ignore.
+    # already set -- e.g. if this module gets re-imported by a spawned child, do nothing
     pass
 
 from dask_jobqueue.slurm import SLURMRunner
@@ -361,11 +367,9 @@ def run_fit(
 
     write_options(port=port)
 
-    # Resources per worker are informational only here -- they tell the
-    # evaluator/protocols how many GPUs/threads each worker has access to.
-    # They do NOT cause anything to be requested from SLURM: that already
-    # happened in submit-fit.slurm, and the scheduler/workers are already
-    # running by the time this function is reached.
+    # Resources per worker are tell the openff evaluator/protocols how many GPUs/threads each worker has access to.
+    # They do NOT cause anything to be requested from SLURM in this scheme, since we are preallocating resources.
+
     worker_resources = ComputeResources(
         number_of_threads=n_threads,
         number_of_gpus=n_gpus,
